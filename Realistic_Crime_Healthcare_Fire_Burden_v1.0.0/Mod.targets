@@ -1,0 +1,158 @@
+﻿<!--DON'T MODIFY THIS FILE. HERE ARE COMMON TARGETS FOR ALL MOD PROJECTS ON COMPUTER-->
+
+<!--
+If you need to change the build post processing behavior,
+you can add a new target with the same name as the target
+you wish to override to your Mod csproj file after the line
+<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
+
+If you need to add additional steps, you can create a new target
+and set the BeforeTargets or AfterTargets attributes
+
+If you need to include additional non-source code files
+to be published with a mod, add a target similarly to this one below:
+  <Target Name="YourCustomDeploy" AfterTargets="DeployWIP">
+    <ItemGroup>
+      <AdditionalFilesToDeploy Include="$(AdditionalFilesDirectory)\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(AdditionalFilesToDeploy)" DestinationFiles="@(AdditionalFilesToDeploy->'$(DeployDir)\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+If you need to modify Mod Post Processor or Mod Publisher command line args,
+add a targets similarly to these ones below:
+  <Target Name="CustomModPostProcessorConfig" AfterTargets="ModPostProcessorConfig">
+		<PropertyGroup>
+			<ModPostProcessorArgs>Set modified args here, use $(ModPostProcessorArgs) to get default args</ModPostProcessorArgs>
+		</PropertyGroup>
+	</Target>
+
+	<Target Name="CustomModPublisherConfig" AfterTargets="ModPublisherConfig">
+		<PropertyGroup>
+			<ModPublisherArgs>Set modified args here, use $(ModPublisherArgs) to get default args</ModPublisherArgs>
+		</PropertyGroup>
+	</Target>
+-->
+
+<Project>
+
+  <PropertyGroup>
+    <ModTargetsFile>$(MSBuildThisFileFullPath)</ModTargetsFile>
+    <ErrorMessageText>User environment variable '{0}' has incorrect path(s) '{1}' set. Please update the Modding toolchain in-game to reset its value or modify its value to a suitable path</ErrorMessageText>
+  </PropertyGroup>
+
+  <Target Name="BuildGetFullPaths" BeforeTargets="BeforeBuild">
+    <PropertyGroup>
+      <NeedBuild>true</NeedBuild>
+      <NeedBuild Condition="'$(ModPublisherCommand)'=='Update'">false</NeedBuild>
+      
+      <ManagedFullPath Condition="'$(ManagedPath)'!=''">$([System.IO.Path]::GetFullPath('$(ManagedPath)'))</ManagedFullPath>
+      <UserDataFullPath Condition="'$(UserDataPath)'!=''">$([System.IO.Path]::GetFullPath('$(UserDataPath)'))</UserDataFullPath>
+      <UnityModProjectFullPath Condition="'$(UnityModProjectPath)'!=''">$([System.IO.Path]::GetFullPath('$(UnityModProjectPath)'))</UnityModProjectFullPath>
+      <ModPostProcessorFullPath Condition="'$(ModPostProcessorPath)'!=''">$([System.IO.Path]::GetFullPath('$(ModPostProcessorPath)'))</ModPostProcessorFullPath>
+      <DeployDir>$(LocalModsPath)\$(TargetName)</DeployDir>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="CheckManagedPath" BeforeTargets="BeforeBuild" Condition="'$(NeedBuild)'">
+    <Error Condition="'$(ManagedFullPath)'==''" Text="The Game Installation path is not set, check the ManagedPath variable value in the Configuration.csproj file" />
+    <Error Condition="!Exists('$(ManagedPath)\Game.dll')" Text="$([System.String]::Format('$(ErrorMessageText)','CSII_MANAGEDPATH', '$(ManagedFullPath)'))" />
+
+    <OnError ExecuteTargets="CheckMSCORLIBPath" />
+  </Target>
+
+  <Target Name="CheckMSCORLIBPath" BeforeTargets="BeforeBuild" Condition="'$(NeedBuild)'">
+    <Error Condition="!Exists('$(MSCORLIBPath)')" Text="$([System.String]::Format('$(ErrorMessageText)','CSII_MSCORLIB', '$(MSCORLIBPath)'))" />
+    <OnError ExecuteTargets="CheckUserDataPath" />
+  </Target>
+
+  <Target Name="CheckUserDataPath" BeforeTargets="BeforeBuild" Condition="'$(NeedBuild)'">
+    <Error Condition="!Exists('$(UserDataFullPath)')" Text="$([System.String]::Format('$(ErrorMessageText)','CSII_USERDATAPATH', '$(UserDataFullPath)'))" />
+    <OnError ExecuteTargets="CheckUnityModProjectPath" />
+  </Target>
+
+  <Target Name="CheckUnityModProjectPath" BeforeTargets="BeforeBuild" Condition="'$(NeedBuild)'">
+    <Error Condition="!Exists('$(UnityModProjectFullPath)')" Text="$([System.String]::Format('$(ErrorMessageText)','CSII_UNITYMODPROJECTPATH', '$(UnityModProjectFullPath)'))" />
+    <OnError ExecuteTargets="CheckModPostProcessorPath" />
+  </Target>
+
+  <Target Name="CheckModPostProcessorPath" BeforeTargets="BeforeBuild" Condition="'$(NeedBuild)'">
+    <Error Condition="!Exists('$(ModPostProcessorFullPath)')" Text="$([System.String]::Format('$(ErrorMessageText)','CSII_MODPOSTPROCESSORPATH', '$(ModPostProcessorFullPath)'))" />
+    <OnError ExecuteTargets="CheckEntityPackagePath" />
+  </Target>
+
+  <Target Name="CheckEntityPackagePath" BeforeTargets="BeforeBuild" Condition="'$(NeedBuild)'">
+    <ItemGroup>
+      <Generators Include="$(EntityPackagePath)\*.dll" />
+    </ItemGroup>
+    <Error Condition="'@(Generators)'==''" Text="$([System.String]::Format('$(ErrorMessageText)','CSII_ENTITIESVERSION', '$(EntityPackagePath)'))" />
+  </Target>
+
+  <Target Name="ClearOutput" BeforeTargets="PreBuildEvent" Condition="'$(NeedBuild)'">
+    <RemoveDir Directories="$(OutDir)" />
+  </Target>
+
+  <Target Name="ModPostProcessorConfig" AfterTargets="AfterBuild" Condition="'$(NeedBuild)'">
+    <PropertyGroup>
+      <ModPostProcessorArgs>"$(ModPostProcessorFullPath)" PostProcess "$(TargetPath)" -u "$(UnityModProjectFullPath)" @(ReferencePath->'-r "%(Identity)"', ' ') -p Windows -p macOS -p Linux -d -v</ModPostProcessorArgs>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="RunModPostProcessor" AfterTargets="AfterBuild" Condition="'$(NeedBuild)'">
+    <Error Condition="!Exists('$(ModPostProcessorFullPath)')" Text="Post processor not found, please check the path: $(ModPostProcessorFullPath)" />
+    <Message Text="Run post processor: $(ModPostProcessorArgs)" Importance="high" />
+    <Exec Command="$(ModPostProcessorArgs)" LogStandardErrorAsError="true" />
+  </Target>
+
+  <Target Name="DeployWIP" AfterTargets="AfterBuild" Condition="'$(NeedBuild)'">
+    <ItemGroup>
+      <FilesToDeploy Include="$(OutDir)\**\*.*" />
+    </ItemGroup>
+    <Message Text="Copy output to deploy directory $(DeployDir)" Importance="high" />
+    <RemoveDir Directories="$(DeployDir)" />
+    <Copy SourceFiles="@(FilesToDeploy)" DestinationFiles="@(FilesToDeploy->'$(DeployDir)\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+
+  <Target Name="PublishGetFullPaths" BeforeTargets="Publish">
+    <PropertyGroup>
+      <ModPublisherFullPath Condition="'$(ModPublisherPath)'!=''">$([System.IO.Path]::GetFullPath('$(ModPublisherPath)'))</ModPublisherFullPath>
+      <PublishConfigurationFullPath Condition="'$(PublishConfigurationPath)'!=''">$([System.IO.Path]::GetFullPath('$(PublishConfigurationPath)'))</PublishConfigurationFullPath>
+      <PublishConfigurationFullPath Condition="'$(PublishConfigurationPath)'==''">$([System.IO.Path]::GetFullPath('Properties\PublishConfiguration.xml'))</PublishConfigurationFullPath>
+      <PDXAccountDataFullPath Condition="'$(PDXAccountDataPath)'!=''">$([System.IO.Path]::GetFullPath('$(PDXAccountDataPath)'))</PDXAccountDataFullPath>
+      <ContentFullPath Condition="'$(DeployDir)'!=''">$([System.IO.Path]::GetFullPath('$(DeployDir)'))</ContentFullPath>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="CheckModPublisherCommand" BeforeTargets="Publish">
+    <Error Condition="'$(ModPublisherCommand)'==''" Text="ModPublisherCommand is not set, check publish profile" />
+    <OnError ExecuteTargets="CheckModPublisherPath" />
+  </Target>
+
+  <Target Name="CheckModPublisherPath" BeforeTargets="Publish">
+    <Error Condition="!Exists('$(ModPublisherFullPath)')" Text="$([System.String]::Format('$(ErrorMessageText)','CSII_MODPUBLISHERPATH', '$(ModPublisherFullPath)'))" />
+    <OnError ExecuteTargets="CheckPublishConfigurationPath" />
+  </Target>
+
+  <Target Name="CheckPublishConfigurationPath" BeforeTargets="Publish">
+    <Error Condition="!Exists('$(PublishConfigurationFullPath)')" Text="Publish configuration not found. Please check the 'PublishConfigurationPath' property value of your project" />
+  </Target>
+
+  <Target Name="CheckPublishFilesAction" Condition="'$(PublishDir)'!='$(OutDir)'" AfterTargets="Publish">
+    <!--Mod publishing uses 'publish to folder' option which creates unuseful folder
+    as the $(DeployDir) is used as publishing content-->
+    <RemoveDir Directories="$(PublishDir)" />
+  </Target>
+
+  <Target Name="ModPublisherConfig" AfterTargets="Publish">
+    <PropertyGroup>
+      <ModPublisherArgs>"$(ModPublisherFullPath)" $(ModPublisherCommand) "$(PublishConfigurationFullPath)" -c "$(ContentFullPath)" -v</ModPublisherArgs>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="RunModPublisher" AfterTargets="Publish">
+    <Error Condition="!Exists('$(ModPublisherPath)')" Text="Mod publisher not found, please check the path: $(ModPublisherPath)" />
+    <Message Text="Run mod publisher: $(ModPublisherArgs)" Importance="high" />
+    <Exec Command="$(ModPublisherArgs)" LogStandardErrorAsError="true" />
+  </Target>
+
+</Project>

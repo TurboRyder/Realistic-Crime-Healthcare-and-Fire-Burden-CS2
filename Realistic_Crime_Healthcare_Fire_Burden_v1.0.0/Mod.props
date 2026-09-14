@@ -1,0 +1,82 @@
+﻿<!--DON'T MODIFY THIS FILE. HERE ARE COMMON PROPERTIES FOR ALL MOD PROJECTS ON COMPUTER-->
+
+<Project>
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <ModPropsFile>$(MSBuildThisFileFullPath)</ModPropsFile>
+
+    <DefaultManagedPath>$([System.Environment]::GetEnvironmentVariable('CSII_MANAGEDPATH', 'EnvironmentVariableTarget.User'))</DefaultManagedPath>
+    <SteamDefaultManagedPath>C:\Program Files (x86)\Steam\steamapps\common\Cities Skylines II\Cities2_Data\Managed</SteamDefaultManagedPath>
+    <XboxDefaultManagedPath>C:\XboxGames\Cities- Skylines II - PC Edition\Content\Cities2_Data\Managed</XboxDefaultManagedPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ManagedPath)' == '' AND Exists('$(DefaultManagedPath)\Game.dll')">
+    <ManagedPath>$(DefaultManagedPath)</ManagedPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ManagedPath)' == '' AND Exists('$(SteamDefaultManagedPath)\Game.dll')">
+    <ManagedPath>$(SteamDefaultManagedPath)</ManagedPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ManagedPath)' == '' AND Exists('$(XboxDefaultManagedPath)\Game.dll')">
+    <ManagedPath>$(XboxDefaultManagedPath)</ManagedPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <UserDataPath>$([System.Environment]::GetEnvironmentVariable('CSII_USERDATAPATH', 'EnvironmentVariableTarget.User'))</UserDataPath>
+
+    <LocalModsPath>$([System.Environment]::GetEnvironmentVariable('CSII_LOCALMODSPATH', 'EnvironmentVariableTarget.User'))</LocalModsPath>
+
+    <UnityModProjectPath>$([System.Environment]::GetEnvironmentVariable('CSII_UNITYMODPROJECTPATH', 'EnvironmentVariableTarget.User'))</UnityModProjectPath>
+
+    <ModPostProcessorPath>$([System.Environment]::GetEnvironmentVariable('CSII_MODPOSTPROCESSORPATH', 'EnvironmentVariableTarget.User'))</ModPostProcessorPath>
+
+    <ModPublisherPath>$([System.Environment]::GetEnvironmentVariable('CSII_MODPUBLISHERPATH', 'EnvironmentVariableTarget.User'))</ModPublisherPath>
+
+    <EntitiesVersion>$([System.Environment]::GetEnvironmentVariable('CSII_ENTITIESVERSION', 'EnvironmentVariableTarget.User'))</EntitiesVersion>
+    <EntityPackagePath>$(UnityModProjectPath)\Library\PackageCache\com.unity.entities@$(EntitiesVersion)\Unity.Entities\SourceGenerators</EntityPackagePath>
+    <AssemblySearchPathsEnv>$([System.Environment]::GetEnvironmentVariable('CSII_ASSEMBLYSEARCHPATH', 'EnvironmentVariableTarget.User'))</AssemblySearchPathsEnv>
+    <UserAssemblySearchPaths>$(AssemblySearchPathsEnv.Split(';', StringSplitOptions.RemoveEmptyEntries))</UserAssemblySearchPaths>
+
+    <MSCORLIBPath>$([System.Environment]::GetEnvironmentVariable('CSII_MSCORLIBPATH', 'EnvironmentVariableTarget.User'))</MSCORLIBPath>
+
+    <AssemblySearchPaths>
+      $(AssemblySearchPaths);
+      $(ManagedPath);
+      $(UserAssemblySearchPaths)
+    </AssemblySearchPaths>
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="$(MSCORLIBPath)">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Analyzer Include="$(EntityPackagePath)\SystemGenerator.SystemAPI.dll" />
+    <Analyzer Include="$(EntityPackagePath)\SystemGenerator.dll" />
+    <Analyzer Include="$(EntityPackagePath)\SystemGenerator.SystemAPI.QueryBuilder.dll" />
+    <Analyzer Include="$(EntityPackagePath)\SystemGenerator.LambdaJobs.dll" />
+    <Analyzer Include="$(EntityPackagePath)\SystemGenerator.Common.dll" />
+    <Analyzer Include="$(EntityPackagePath)\SystemGenerator.SystemAPI.Query.dll" />
+    <Analyzer Include="$(EntityPackagePath)\SystemGenerator.EntityQueryBulkOperations.dll" />
+    <Analyzer Include="$(EntityPackagePath)\AspectGenerator.dll" />
+    <Analyzer Include="$(EntityPackagePath)\Common.dll" />
+    <Analyzer Include="$(EntityPackagePath)\JobEntityGenerator.dll" />
+    <Analyzer Include="$(EntityPackagePath)\Unity.Entities.Analyzer.dll" />
+    <Analyzer Include="$(EntityPackagePath)\Unity.Entities.Analyzer.CodeFixes.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Logs\**" />
+    <None Remove="Library\**" />
+  </ItemGroup>
+
+
+</Project>
